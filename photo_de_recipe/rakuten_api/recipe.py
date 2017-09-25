@@ -1,102 +1,121 @@
 # -*- coding: utf-8 -*-
+
 import requests,json
-import apiid as my    #apiidファイルから参照
+from rakuten_api import apiid as my # apiidファイルから参照
 import time
-#import api
-#楽天APIカテゴリー別ランキング
+# import dht12 as temp
+# import sys
 
-def recipe(name):
+# reload(sys) # sysモジュールをリロード
+# sys.setdefaultencoding("utf-8") # デフォルトの文字コードを変更
 
-	url = 'https://app.rakuten.co.jp/services/api/Recipe/CategoryRanking/20170426'
+# import api
 
-	#name = ['tomato','carrot','eggplant']	#食材情報
-	c = 27							#温度情報
-	namelen = len(name)
+# 楽天APIカテゴリー別ランキング
+url = 'https://app.rakuten.co.jp/services/api/Recipe/CategoryRanking/20170426'
 
-	lenname = len(name)
-	for q in range(0,lenname):
-		if name[q] == 'tomato':
-			name[q] = 'トマト'
-		elif name[q] == 'eggplant':
-			name[q] = 'なす'
-		elif name[q] == 'broccoli':
-			name[q] = 'ブロッコリー'
-		elif name[q] == 'carrot':
-			name[q] = 'にんじん'
-		elif name[q] == 'potato':
-			name[q] = 'じゃがいも'		
+def get_recipe(result, temp):
+    #name = ['2'] #食材情報
+    name = result
+    # c = 26 #温度情報
+    c = temp
+    namelen = len(name)
+    lenname = len(name)
 
+    for q in range(0, lenname):
+        if name[q] == 0:
+            name[q] = 'にんじん'
+        elif name[q] == 1:
+            name[q] = 'ブロッコリー'
+        elif name[q] == 2:
+            name[q] = 'なす'
+        elif name[q] == 3:
+            name[q] = 'じゃがいも'
+        elif name[q] == 4:
+            name[q] = 'トマト'
 
+    # 検出食材の表示
+    for i in range(lenname):
+        print('food%d: %s' % (i, name[i]))
 
-	 
+    print('\n')
 
+    # 季節を表すキーワード
+    summer = ['夏','暑','つめたい','冷たい','そうめん','さっぱり','涼','ひんやり','さわやか','爽やか','なつ','熱中症','汗','素麺']
+    winter = ['冬','熱々','アツアツ','ふゆ','鍋','寒','温ま','あたたまる','あつあつ','あったか','ぽかぽか','ポカポカ','ぽっかぽか','ホクホク','クリスマス']
 
-	summer = ['夏','寒','つめたい','冷']			#気温がたかいときに食べたいワード
-	winter = ['冬','熱','あつい','暑','鍋']		#気温が低いときに食べたいワード
+    slen = len(summer)
+    wlen = len(winter)
+    season1 = [[0 for g in range(4)] for h in range(6)]
+    season2 = [[0 for g in range(4)] for h in range(6)]
+    count1 = [0]*5
+    count2 = [0]*5
+    for j in range(0,namelen):
+        payload = {
+            'applicationId': [1003080147854007200],
+            'categoryId':my.apiid(name[j]), # apiidから食材情報を取得
+            #'elements':'recipeTitle',
+            }
 
+        r = requests.get(url, params=payload)
+        resp = r.json()
+        print ('-'*40)
+        print(name[j] + '料理\n')
 
-	slen = len(summer)
-	wlen = len(winter)
-	season1 = [0]*30
-	season2 = [0]*30
-	count1 = 0
-	count2 = 0
-	for j in range(0,namelen):
+        for i in resp['result']:
+            print(i['recipeTitle'])
+            print(i['recipeUrl'] + '\n')
+            rd = i['recipeDescription']
+            rt = i['recipeTitle']
+            if c >= 25: # 高知の6月から8月の平均気温
+                for p in range(0,slen):
+                    ans1 = summer[p] in rd # ansにはpsの中に同じワードが入っていればTrueが入る
+                    ans2 = summer[p] in rt
 
-		payload = {
-			'applicationId': [1003080147854007200],
-			'categoryId':my.apiid(name[j]),	    #apiidから食材情報を取得
-			#'elements':'recipeTitle',
-			}
+                    if ans1 == True:
+                        season1[j][count1[j]] = rt
+                        count1[j] = count1[j] + 1
+                        break
+                    elif ans2 == True:
+                        season1[j][count1[j]] = rt
+                        count1[j] = count1[j] + 1
+                        break
+            elif c <= 10: # 高知の12月から2月の平均気温
+                for p in range(0,wlen):
+                    ans1 = winter[p] in rd # ansにはpsの中に同じワードが入っていればTrueが入る
+                    ans2 = winter[p] in rt
 
-		r = requests.get(url, params=payload)
-		resp = r.json()
-		print ('-'*40)
-		print(name[j] + '\n')
+                    if ans1 == True:
+                        season2[j][count2[j]] = rt
+                        count2[j] = count2[j] + 1
+                        break
+                    elif ans2 == True:
+                        season2[j][count2[j]] = rt
+                        count2[j] = count2[j] + 1
+                        break
+        print()
+        time.sleep(1)
 
-		for i in resp['result']:
-			print(i['recipeTitle'])
-			print(i['recipeUrl'])
-			rd = i['recipeDescription']
-			rt = i['recipeTitle']
-			if c > 26:	
-				for p in range(0,slen):
-					ans1 = summer[p] in rd      #ansにはpsの中に同じワードが入っていればTrueが入る
-					ans2 = summer[p] in rt
-
-					if ans1 == True:
-						season1[count1] = rt
-						count1 = count1 + 1
-						break
-					elif ans2 == True:
-						season1[count1] = rt
-						count1 = count1 + 1
-						break
-			elif c < 20:
-				for p in range(0,wlen):
-					ans1 = winter[p] in rd      #ansにはpsの中に同じワードが入っていればTrueが入る
-					ans2 = winter[p] in rt
-
-					if ans1 == True:
-						season2[count2] = rt
-						count2 = count2 + 1
-						break
-					elif ans2 == True:
-						season2[count2] = rt
-						count2 = count2 + 1
-						break
-		time.sleep(1)
-
-	if c > 26 and count1 >= 1:
-		print ('-'*40)		
-		print('夏に食べよう\n')	
-		for y in range(0,count1):
-			print(season1[y])
-			print(i['recipeUrl'])
-	elif c < 20 and count2 >= 1:	
-		print ('-'*40)	
-		print('冬に食べよう\n')	
-		for y in range(0,count2):
-			print(season2[y])
-			print(i['recipeUrl'])
-		
+    # レシピ名とurlの表示
+    for k in range(0,namelen):
+        if c >= 25 and count1[k] >= 1:
+            print ('-'*40)
+            print('夏のおすすめ ' + name[k] + '料理\n')
+            for y in range(0,count1[k]):
+                print(season1[k][y])
+                print(i['recipeUrl'] + '\n')
+            print()
+        # elif c >= 25 and count1[k] == 0:
+        #     print ('-'*40)
+        #     print(name[k] + '夏のおすすめはありません')
+        elif c <= 10 and count2[k] >= 1:
+            print ('-'*40)
+            print('冬のおすすめ ' + name[k] + '料理\n')
+            for y in range(0,count2[k]):
+                print(season2[y])
+                print(i['recipeUrl'] + '\n')
+            print()
+        # elif c <= 10 and count1[k] == 0:
+        #     print ('-'*40)
+        #     print(name[k] + '冬のおすすめありません')
+        #     print('\n')
