@@ -7,10 +7,12 @@ import numpy as np
 def object_detect(path):
 
     # 検出画像の保存用
-    detect_img = []
+    detect = []
 
     # 画像の読み込み、出力画像用（検出領域の描写）
-    img, output_img = path, path;
+    #img = cv2.imread(path)
+    #detect_all = cv2.imread(path)
+    img, detect_all = path, path;
 
     # グレースケール画像へ変換
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -20,7 +22,7 @@ def object_detect(path):
 
     # 2値化
     #   背景を落とす
-    retval, thresh_back = cv2.threshold(filtered, 50, 255, cv2.THRESH_BINARY)
+    retval, thresh_back = cv2.threshold(filtered, 120, 255, cv2.THRESH_BINARY)
     #   境界の明確化
     retval, thresh_clarify = cv2.threshold(filtered, 200, 255, cv2.THRESH_BINARY_INV)
     thresh = np.minimum(thresh_back, thresh_clarify)
@@ -48,11 +50,16 @@ def object_detect(path):
       if len(contours[i]) > 0:
         rect = contours[i]
         x, y, w, h = cv2.boundingRect(rect)
-        cv2.rectangle(output_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.rectangle(detect_all, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         # 外接矩形毎に画像を保存
-        # cv2.imwrite('/Users/kfukuda/Desktop/advse17/code/' + str(detect_count) + '.jpg', img[y:y + h, x:x + w])
-        detect_img.append(img[y:y + h, x:x + w])
+        #cv2.imwrite('photo/detect' + str(detect_count) + '.jpg', img[y:y + h, x:x + w])
+        detect.append(img[y:y + h, x:x + w])
         detect_count = detect_count + 1
 
-    return output_img, detect_img, detect_count
+    #cv2.imwrite('photo/detect_all.jpg', detect_all)
+    #cv2.imshow('detect', detect_all)
+    #cv2.waitKey(0)
+
+    #return detect_count
+    return detect_all, detect, detect_count
